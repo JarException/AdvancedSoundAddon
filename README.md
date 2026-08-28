@@ -4,7 +4,7 @@ AdvancedSoundAddon generates vehicle audio for DynamX in real time. It covers en
 
 ## Preview
 
-Coming soon.
+https://github.com/user-attachments/assets/46ba3333-d4c8-43f5-ac4d-60b40a131655
 
 ## Download
 
