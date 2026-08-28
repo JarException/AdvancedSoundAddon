@@ -1,0 +1,49 @@
+AdvancedSoundAddon Source-Available License 1.0
+
+Copyright (c) 2026 JarException. All rights reserved except as expressly granted below.
+
+This license applies to the original AdvancedSoundAddon source code and assets (the "Software"). Third-party material is governed by its respective license as documented in THIRD_PARTY_NOTICES.md.
+
+1. Permissions
+
+Subject to this license, you may:
+
+a. use official releases of the Software;
+b. view and download the source code;
+c. create a fork through GitHub's built-in fork functionality;
+d. modify and build the Software for personal development, testing and evaluation; and
+e. submit modifications to the official repository through issues or pull requests.
+
+2. Distribution restrictions
+
+Except for a GitHub fork and contributions permitted by Section 1, you may not publish, distribute, sublicense, sell, transfer, mirror or otherwise make available the Software, its source code, compiled binaries, modified versions or derivative works without prior written permission from JarException.
+
+In particular, you may not publish releases, JAR files, packages or other downloads from a fork, present a fork as an independent distribution, or include the Software or a modified version in a publicly distributed collection without prior written permission.
+
+Only JarException and persons expressly authorized in writing by JarException may publish or distribute releases of the Software.
+
+3. GitHub forks
+
+A GitHub fork may remain publicly visible as part of the official repository's fork network and may contain source-code modifications intended for development or contribution. This exception does not permit release assets, packages, compiled binaries or independent mirrors to be published from the fork.
+
+4. Ownership and notices
+
+The Software is licensed, not sold. JarException retains all rights not expressly granted by this license. You must preserve copyright, license and third-party notices in every permitted copy or fork. You may not imply that a modified fork is official or endorsed by JarException.
+
+5. Contributions
+
+By intentionally submitting a contribution to the official AdvancedSoundAddon repository, you represent that you have the right to submit it and grant JarException a perpetual, worldwide, non-exclusive, irrevocable, royalty-free license to use, reproduce, modify, publish, distribute, sublicense and relicense that contribution as part of or in connection with AdvancedSoundAddon.
+
+You retain copyright in your contribution. Contributions included in the repository are otherwise made available under this license unless separately stated in writing.
+
+6. Termination
+
+Your permissions under this license terminate automatically if you violate its terms. Sections concerning ownership, contributions, warranty, liability and third-party material survive termination.
+
+7. Disclaimer of warranty and limitation of liability
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW, JAREXCEPTION SHALL NOT BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+8. Additional permission
+
+JarException may grant exceptions or additional permissions in writing. An exception for one person or use does not change this license for anyone else.

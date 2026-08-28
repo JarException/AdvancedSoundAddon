@@ -1,0 +1,9 @@
+.gradle/
+build/
+run/
+out/
+logs/
+.idea/
+*.iml
+libs/*.jar
+!libs/DynamX-4.1.0-beta1-all.jar

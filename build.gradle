@@ -1,0 +1,134 @@
+buildscript {
+    repositories {
+        maven { url = 'https://maven.minecraftforge.net/' }
+        maven { url = 'https://repo.spongepowered.org/maven' }
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.77'
+        classpath 'org.spongepowered:mixingradle:0.7.38'
+    }
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+apply plugin: 'org.spongepowered.mixin'
+apply plugin: 'java'
+apply plugin: 'idea'
+
+group = mod_group
+version = mod_version
+archivesBaseName = mod_name
+
+sourceCompatibility = targetCompatibility = '1.8'
+compileJava.options.encoding = 'UTF-8'
+
+minecraft {
+    mappings channel: 'stable', version: '39-1.12'
+
+    runs {
+        client {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            arg '-torg.spongepowered.asm.launch.MixinTweaker'
+            mods {
+                advancedsoundaddon { source sourceSets.main }
+            }
+        }
+        server {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'info'
+            mods {
+                advancedsoundaddon { source sourceSets.main }
+            }
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+    maven { url = 'https://repo.spongepowered.org/maven' }
+}
+
+def dynamXFile = project.hasProperty('dynamxJar')
+        ? file(project.property('dynamxJar'))
+        : file("libs/DynamX-${dynamx_version}-all.jar")
+if (!dynamXFile.isFile()) {
+    throw new GradleException("DynamX jar not found: ${dynamXFile}")
+}
+logger.lifecycle("Using local DynamX compile dependency: ${dynamXFile.name}")
+
+dependencies {
+    minecraft 'net.minecraftforge:forge:1.12.2-14.23.5.2860'
+    compileOnly files(dynamXFile)
+
+    compileOnly('org.spongepowered:mixin:0.8.3') {
+        exclude module: 'guava'
+        exclude module: 'commons-io'
+        exclude module: 'gson'
+    }
+    annotationProcessor 'org.spongepowered:mixin:0.8.3:processor'
+
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation files(dynamXFile)
+}
+
+mixin {
+    defaultObfuscationEnv 'searge'
+    add sourceSets.main, 'refmap.advancedsoundaddon.json'
+    config 'mixins.advancedsoundaddon.json'
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('mcmod.info') {
+        expand 'version': project.version
+    }
+}
+
+jar {
+    from('LICENSE') {
+        into 'META-INF'
+        rename { 'LICENSE-advanced-sound-addon.txt' }
+    }
+    from('THIRD_PARTY_NOTICES.md') {
+        into 'META-INF'
+        rename { 'THIRD-PARTY-NOTICES.md' }
+    }
+    manifest {
+        attributes([
+                'Specification-Title': 'AdvancedSoundAddon',
+                'Specification-Version': '1',
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'ForceLoadAsMod': 'true',
+                'FMLCorePluginContainsFMLMod': 'true',
+                'TweakClass': 'org.spongepowered.asm.launch.MixinTweaker',
+                'TweakOrder': '0',
+                'MixinConfigs': 'mixins.advancedsoundaddon.json'
+        ])
+    }
+}
+
+jar.finalizedBy('reobfJar')
+
+test {
+    useJUnit()
+}
+
+tasks.register('verifyModVersion') {
+    def modSource = file('src/main/java/de/jarexception/advancedsoundaddon/AdvancedSoundAddon.java')
+    inputs.file modSource
+    inputs.property 'expectedVersion', project.version
+
+    doLast {
+        def matcher = modSource.text =~ /public static final String VERSION = "([^"]+)";/
+        if (!matcher.find()) {
+            throw new GradleException("VERSION constant not found in ${modSource}")
+        }
+        if (matcher.group(1) != project.version.toString()) {
+            throw new GradleException("VERSION constant ${matcher.group(1)} does not match mod_version ${project.version}")
+        }
+    }
+}
+
+check.dependsOn tasks.named('verifyModVersion')

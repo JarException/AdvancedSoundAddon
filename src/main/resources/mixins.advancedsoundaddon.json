@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "de.jarexception.advancedsoundaddon.mixin",
+  "refmap": "refmap.advancedsoundaddon.json",
+  "compatibilityLevel": "JAVA_8",
+  "client": [
+    "MixinBasicEngineModule",
+    "MixinDynamXSoundHandler",
+    "MixinSkiddingSound",
+    "VehicleSoundAccessor"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
