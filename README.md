@@ -1,6 +1,6 @@
 # Advanced Sound Addon for DynamX
 
-AdvancedSoundAddon generates vehicle audio for DynamX in real time. It covers engines, turbochargers, tyres, brakes, horns, sirens, pneumatic systems and helicopter rotors without requiring vehicle sound samples.
+AdvancedSoundAddon generates vehicle audio for DynamX in real time. It covers engines, turbochargers, tyres, brakes, reverse warnings, horns, sirens, pneumatic systems and helicopter rotors without requiring vehicle sound samples.
 
 ## Preview
 
@@ -68,6 +68,7 @@ Vehicle features belong in `vehicle_NAME.dynx`. Several presets can share one bl
 ```less
 AdvancedSoundAddon#Op{
   AirBrakePreset: TRUCK_AIR_BRAKE
+  ReverseWarningPreset: TONAL_BEEPER
   BrakeSquealPreset: CLASSIC_DISC
   HornPreset: TRUCK_AIR
 }
@@ -77,14 +78,17 @@ AdvancedSoundAddon#Op{
 | --- | --- | --- |
 | Helicopter rotor | `HELICOPTER_2_BLADE`, `HELICOPTER_4_BLADE` | Off |
 | Air brakes | `TRUCK_AIR_BRAKE`, `BUS_AIR_BRAKE` | Off |
+| Reverse warning | `TONAL_BEEPER`, `BROADBAND` | Off |
 | Brake sound | `CLASSIC_DISC`, `CARBON_CERAMIC`, `OLD_DRUM` | Off |
 | Exhaust afterfire | `SPORT`, `AGGRESSIVE`, `RACE` | Off |
 | Tyres | `STREET_TIRE`, `PERFORMANCE_TIRE`, `RACE_SLICK`, `HEAVY_TIRE` | `STREET_TIRE` when globally enabled |
 | Horns | `COMPACT_CAR`, `STANDARD_CAR`, `LUXURY_CAR`, `SPORT_CAR`, `CLASSIC_CAR`, `MOTORCYCLE`, `TRUCK_AIR`, `BUS_AIR`, `UTILITY`, `MARINE` | Original horn |
 
-The corresponding properties are `RotorPreset`, `AirBrakePreset`, `BrakeSquealPreset`, `AfterfirePreset`, `TireSquealPreset` and `HornPreset`.
+The corresponding properties are `RotorPreset`, `AirBrakePreset`, `ReverseWarningPreset`, `BrakeSquealPreset`, `AfterfirePreset`, `TireSquealPreset` and `HornPreset`.
 
 Use `TURBOSHAFT` together with a rotor preset for helicopters. Air brakes react when stopping and moving away, brake sounds play while braking, and afterfire is triggered by lifting off the throttle at high RPM.
+
+`ReverseWarningPreset` starts automatically while reverse gear is selected and the propulsion system is on.
 
 A vehicle block may also select another engine `Preset` or override engine values. Vehicle values take priority over values from the engine file.
 

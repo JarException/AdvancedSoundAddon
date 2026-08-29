@@ -5,6 +5,7 @@ import de.jarexception.advancedsoundaddon.sound.EngineProfile;
 import de.jarexception.advancedsoundaddon.sound.AirBrakeProfile;
 import de.jarexception.advancedsoundaddon.sound.AfterfireProfile;
 import de.jarexception.advancedsoundaddon.sound.BrakeSquealProfile;
+import de.jarexception.advancedsoundaddon.sound.ReverseWarningProfile;
 import de.jarexception.advancedsoundaddon.sound.RotorProfile;
 import de.jarexception.advancedsoundaddon.sound.TireSquealProfile;
 import de.jarexception.advancedsoundaddon.sound.HornProfile;
@@ -60,6 +61,21 @@ public final class EngineProfileResolver {
             return definition.resolveAirBrakeProfile();
         } catch (IllegalArgumentException exception) {
             LOGGER.error("Invalid vehicle-level AirBrakePreset on {}: {}",
+                    entity.getInfoName(), exception.getMessage());
+            return null;
+        }
+    }
+
+    public static ReverseWarningProfile resolveReverseWarning(BaseVehicleEntity<?> entity) {
+        ModularVehicleInfo vehicleInfo = entity.getPackInfo();
+        AdvancedSoundInfo definition = vehicleInfo == null ? null : find(vehicleInfo);
+        if (definition == null) {
+            return null;
+        }
+        try {
+            return definition.resolveReverseWarningProfile();
+        } catch (IllegalArgumentException exception) {
+            LOGGER.error("Invalid vehicle-level ReverseWarningPreset on {}: {}",
                     entity.getInfoName(), exception.getMessage());
             return null;
         }

@@ -9,6 +9,7 @@ import de.jarexception.advancedsoundaddon.sound.EngineProfile;
 import de.jarexception.advancedsoundaddon.sound.EngineTelemetry;
 import de.jarexception.advancedsoundaddon.sound.EngineVoice;
 import de.jarexception.advancedsoundaddon.sound.RotorProfile;
+import de.jarexception.advancedsoundaddon.sound.ReverseWarningProfile;
 import de.jarexception.advancedsoundaddon.sound.TireSquealProfile;
 import de.jarexception.advancedsoundaddon.sound.HornProfile;
 import de.jarexception.advancedsoundaddon.sound.SirenProfile;
@@ -134,6 +135,8 @@ public final class ProceduralAudioManager {
                 ? EngineProfileResolver.resolveRotor(entity) : null;
         AirBrakeProfile airBrakeProfile = voice == null
                 ? EngineProfileResolver.resolveAirBrake(entity) : null;
+        ReverseWarningProfile reverseWarningProfile = voice == null
+                ? EngineProfileResolver.resolveReverseWarning(entity) : null;
         BrakeSquealProfile brakeSquealProfile = voice == null
                 ? EngineProfileResolver.resolveBrakeSqueal(entity) : null;
         AfterfireProfile afterfireProfile = voice == null
@@ -188,17 +191,19 @@ public final class ProceduralAudioManager {
                     brakeApplied, tireSlip, signalState.hornActive, signalState.sirenActive,
                     isInterior(entity), System.nanoTime());
             VehicleVoice created = new VehicleVoice(entity, engineName, profile, rotorProfile,
-                    airBrakeProfile, brakeSquealProfile, afterfireProfile, tireSquealProfile,
+                    airBrakeProfile, reverseWarningProfile, brakeSquealProfile,
+                    afterfireProfile, tireSquealProfile,
                     hornProfile, sirenProfile, tireSlipTracker, localSignals, initial, clientTick);
             VehicleVoice existing = voices.putIfAbsent(id, created);
             voice = existing == null ? created : existing;
             if (existing == null) {
                 int cylinders = profile.getFiringPattern() == null ? 0 : profile.getFiringPattern().getCylinderCount();
                 int banks = profile.getFiringPattern() == null ? 0 : profile.getFiringPattern().getBankCount();
-                LOGGER.debug("Observed DynamX engine {} on {}: profile={}, rotor={}, airBrake={}, brakeSqueal={}, afterfire={}, tireSqueal={}, horn={}, siren={}, cylinders={}, banks={}, rpm={}/{}, engineOn={}",
+                LOGGER.debug("Observed DynamX engine {} on {}: profile={}, rotor={}, airBrake={}, reverseWarning={}, brakeSqueal={}, afterfire={}, tireSqueal={}, horn={}, siren={}, cylinders={}, banks={}, rpm={}/{}, engineOn={}",
                         engineName, vehicleName, profile.getPresetName(),
                         rotorProfile == null ? "none" : rotorProfile.getPresetName(),
                         airBrakeProfile == null ? "none" : airBrakeProfile.getPresetName(),
+                        reverseWarningProfile == null ? "none" : reverseWarningProfile.getPresetName(),
                         brakeSquealProfile == null ? "none" : brakeSquealProfile.getPresetName(),
                         afterfireProfile == null ? "none" : afterfireProfile.getPresetName(),
                         tireSquealProfile == null ? "none" : tireSquealProfile.getPresetName(),
@@ -824,6 +829,7 @@ public final class ProceduralAudioManager {
 
         private VehicleVoice(BaseVehicleEntity<?> entity, String engineName, EngineProfile profile,
                              RotorProfile rotorProfile, AirBrakeProfile airBrakeProfile,
+                             ReverseWarningProfile reverseWarningProfile,
                              BrakeSquealProfile brakeSquealProfile, AfterfireProfile afterfireProfile,
                              TireSquealProfile tireSquealProfile,
                              HornProfile hornProfile, SirenProfile sirenProfile,
@@ -843,7 +849,7 @@ public final class ProceduralAudioManager {
             this.localSignals = localSignals;
             this.synthesizer = new EngineVoice(profile, rotorProfile, airBrakeProfile,
                     brakeSquealProfile, afterfireProfile, tireSquealProfile,
-                    hornProfile, sirenProfile,
+                    hornProfile, sirenProfile, reverseWarningProfile,
                     AdvancedSoundSettings.SAMPLE_RATE, telemetry);
             this.lastEngineOn = telemetry.engineOn;
             this.lastSeenTick = tick;

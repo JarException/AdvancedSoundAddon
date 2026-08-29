@@ -6,6 +6,7 @@ import de.jarexception.advancedsoundaddon.sound.EnginePowertrain;
 import de.jarexception.advancedsoundaddon.sound.AirBrakeProfile;
 import de.jarexception.advancedsoundaddon.sound.AfterfireProfile;
 import de.jarexception.advancedsoundaddon.sound.BrakeSquealProfile;
+import de.jarexception.advancedsoundaddon.sound.ReverseWarningProfile;
 import de.jarexception.advancedsoundaddon.sound.RotorProfile;
 import de.jarexception.advancedsoundaddon.sound.TireSquealProfile;
 import de.jarexception.advancedsoundaddon.sound.HornProfile;
@@ -274,6 +275,26 @@ public class AdvancedSoundInfoTest {
         AdvancedSoundInfo definition = new AdvancedSoundInfo(null);
         definition.airBrakePreset = "random-truck-noise";
         definition.resolveAirBrakeProfile();
+    }
+
+    @Test
+    public void vehicleBlockSelectsIndependentReverseWarningPreset() {
+        AdvancedSoundInfo definition = new AdvancedSoundInfo(null);
+        definition.reverseWarningPreset = "tonal-beeper";
+
+        ReverseWarningProfile warning = definition.resolveReverseWarningProfile();
+
+        assertEquals("TONAL_BEEPER", warning.getPresetName());
+        assertEquals(60.0F, warning.getPulsesPerMinute(), 0.01F);
+        assertEquals(EngineLayout.I4,
+                definition.applyTo(EngineProfile.forLayout(EngineLayout.I4)).getLayout());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void rejectsUnknownReverseWarningPreset() {
+        AdvancedSoundInfo definition = new AdvancedSoundInfo(null);
+        definition.reverseWarningPreset = "country-guessed-alarm";
+        definition.resolveReverseWarningProfile();
     }
 
     @Test

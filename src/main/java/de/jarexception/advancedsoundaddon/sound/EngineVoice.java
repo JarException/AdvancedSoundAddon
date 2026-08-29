@@ -22,6 +22,7 @@ public final class EngineVoice {
     private final TireSquealVoice tireSquealVoice;
     private final HornVoice hornVoice;
     private final SirenVoice sirenVoice;
+    private final ReverseWarningVoice reverseWarningVoice;
     private final AfterfireController afterfireController;
     private final double rpmRiseSmoothing;
     private final double rpmFallSmoothing;
@@ -137,6 +138,17 @@ public final class EngineVoice {
                        AfterfireProfile afterfireProfile, TireSquealProfile tireSquealProfile,
                        HornProfile hornProfile, SirenProfile sirenProfile,
                        int sampleRate, EngineTelemetry initialTelemetry) {
+        this(profile, rotorProfile, airBrakeProfile, brakeSquealProfile, afterfireProfile,
+                tireSquealProfile, hornProfile, sirenProfile, null,
+                sampleRate, initialTelemetry);
+    }
+
+    public EngineVoice(EngineProfile profile, RotorProfile rotorProfile,
+                       AirBrakeProfile airBrakeProfile, BrakeSquealProfile brakeSquealProfile,
+                       AfterfireProfile afterfireProfile, TireSquealProfile tireSquealProfile,
+                       HornProfile hornProfile, SirenProfile sirenProfile,
+                       ReverseWarningProfile reverseWarningProfile,
+                       int sampleRate, EngineTelemetry initialTelemetry) {
         this.profile = profile;
         this.sampleRate = sampleRate;
         TurbochargerProfile turbochargerProfile = TurbochargerProfile.forEngineProfile(profile);
@@ -154,6 +166,8 @@ public final class EngineVoice {
                 : new HornVoice(hornProfile, profile.getOutputGain(), sampleRate, initialTelemetry);
         sirenVoice = sirenProfile == null ? null
                 : new SirenVoice(sirenProfile, profile.getOutputGain(), sampleRate, initialTelemetry);
+        reverseWarningVoice = reverseWarningProfile == null ? null
+                : new ReverseWarningVoice(reverseWarningProfile, sampleRate, initialTelemetry);
         afterfireController = afterfireProfile == null
                 || profile.getPowertrain() != EnginePowertrain.COMBUSTION
                 || profile.isCompressionIgnition() ? null
@@ -282,6 +296,9 @@ public final class EngineVoice {
         if (sirenVoice != null) {
             sirenVoice.requestResync(telemetry);
         }
+        if (reverseWarningVoice != null) {
+            reverseWarningVoice.requestResync(telemetry);
+        }
         if (alternativePowertrain != null) {
             alternativePowertrain.requestResync(telemetry);
             return;
@@ -312,6 +329,9 @@ public final class EngineVoice {
         }
         if (sirenVoice != null) {
             mixed = mixPcm(mixed, sirenVoice.render(telemetry, sampleCount));
+        }
+        if (reverseWarningVoice != null) {
+            mixed = mixPcm(mixed, reverseWarningVoice.render(telemetry, sampleCount));
         }
         return mixed;
     }
@@ -742,7 +762,8 @@ public final class EngineVoice {
                 && (brakeSquealVoice == null || brakeSquealVoice.isSilent())
                 && (tireSquealVoice == null || tireSquealVoice.isSilent())
                 && (hornVoice == null || hornVoice.isSilent())
-                && (sirenVoice == null || sirenVoice.isSilent());
+                && (sirenVoice == null || sirenVoice.isSilent())
+                && (reverseWarningVoice == null || reverseWarningVoice.isSilent());
     }
 
     public float getActiveSignalDistance() {
@@ -752,6 +773,9 @@ public final class EngineVoice {
         }
         if (sirenVoice != null && !sirenVoice.isSilent()) {
             distance = Math.max(distance, sirenVoice.getAudibleDistance());
+        }
+        if (reverseWarningVoice != null && !reverseWarningVoice.isSilent()) {
+            distance = Math.max(distance, reverseWarningVoice.getAudibleDistance());
         }
         return distance;
     }

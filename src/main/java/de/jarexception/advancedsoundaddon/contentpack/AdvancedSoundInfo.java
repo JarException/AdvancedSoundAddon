@@ -7,6 +7,7 @@ import de.jarexception.advancedsoundaddon.sound.EngineProfile;
 import de.jarexception.advancedsoundaddon.sound.AirBrakeProfile;
 import de.jarexception.advancedsoundaddon.sound.AfterfireProfile;
 import de.jarexception.advancedsoundaddon.sound.BrakeSquealProfile;
+import de.jarexception.advancedsoundaddon.sound.ReverseWarningProfile;
 import de.jarexception.advancedsoundaddon.sound.RotorProfile;
 import de.jarexception.advancedsoundaddon.sound.TireSquealProfile;
 import de.jarexception.advancedsoundaddon.sound.HornProfile;
@@ -42,6 +43,9 @@ public class AdvancedSoundInfo implements ISubInfoType {
 
     @PackFileProperty(configNames = {"AirBrakePreset", "PneumaticPreset"}, type = DefinitionType.DynamXDefinitionTypes.STRING, required = false)
     String airBrakePreset;
+
+    @PackFileProperty(configNames = {"ReverseWarningPreset", "ReversingAlarmPreset", "BackupAlarmPreset"}, type = DefinitionType.DynamXDefinitionTypes.STRING, required = false)
+    String reverseWarningPreset;
 
     @PackFileProperty(configNames = {"BrakeSquealPreset", "BrakeNoisePreset"}, type = DefinitionType.DynamXDefinitionTypes.STRING, required = false)
     String brakeSquealPreset;
@@ -249,6 +253,14 @@ public class AdvancedSoundInfo implements ISubInfoType {
         }
         String normalized = airBrakePreset.trim().toUpperCase(Locale.ROOT).replace('-', '_');
         return AirBrakeProfile.forPreset(normalized);
+    }
+
+    ReverseWarningProfile resolveReverseWarningProfile() {
+        if (reverseWarningPreset == null || reverseWarningPreset.trim().isEmpty()) {
+            return null;
+        }
+        String normalized = normalize(reverseWarningPreset);
+        return ReverseWarningProfile.forPreset(normalized);
     }
 
     BrakeSquealProfile resolveBrakeSquealProfile() {
