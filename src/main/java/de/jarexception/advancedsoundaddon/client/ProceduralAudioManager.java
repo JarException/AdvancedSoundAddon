@@ -168,7 +168,8 @@ public final class ProceduralAudioManager {
                         (voice == null ? hornProfile != null : voice.hornEnabled) && !basicsHorn,
                         (voice == null ? sirenProfile != null : voice.sirenEnabled) && !basicsSiren,
                         controllingVehicle && SignalKeyBindings.horn().isKeyDown(),
-                        controllingVehicle && SignalKeyBindings.siren().isPressed());
+                        controllingVehicle && !basicsSiren
+                                && SignalKeyBindings.siren().isPressed());
                 signalState = new BasicsAddonSignalBridge.SignalState(
                         signalState.hornActive || localSignals.isHornActive(),
                         signalState.sirenActive || localSignals.isSirenActive());
