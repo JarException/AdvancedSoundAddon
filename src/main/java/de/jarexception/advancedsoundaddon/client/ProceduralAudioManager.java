@@ -12,13 +12,17 @@ import de.jarexception.advancedsoundaddon.sound.RotorProfile;
 import de.jarexception.advancedsoundaddon.sound.ReverseWarningProfile;
 import de.jarexception.advancedsoundaddon.sound.TireSquealProfile;
 import de.jarexception.advancedsoundaddon.sound.HornProfile;
+import de.jarexception.advancedsoundaddon.sound.IndicatorProfile;
 import de.jarexception.advancedsoundaddon.sound.SirenProfile;
 import de.jarexception.advancedsoundaddon.signal.SignalKeyBindings;
 import de.jarexception.advancedsoundaddon.signal.VehicleSignalModule;
 import fr.dynamx.api.entities.VehicleEntityProperties;
 import fr.dynamx.client.ClientProxy;
 import fr.dynamx.common.contentpack.type.vehicle.BaseEngineInfo;
+import fr.dynamx.common.contentpack.parts.BasePartSeat;
+import fr.dynamx.common.contentpack.parts.PartEntitySeat;
 import fr.dynamx.common.entities.BaseVehicleEntity;
+import fr.dynamx.common.entities.modules.SeatsModule;
 import fr.dynamx.common.entities.modules.WheelsModule;
 import fr.dynamx.common.entities.modules.engines.BasicEngineModule;
 import fr.dynamx.common.entities.modules.engines.HelicopterEngineModule;
@@ -147,9 +151,13 @@ public final class ProceduralAudioManager {
                 ? EngineProfileResolver.resolveHorn(entity) : null;
         SirenProfile sirenProfile = voice == null
                 ? EngineProfileResolver.resolveSiren(entity) : null;
+        boolean indicatorsAvailable = voice == null
+                ? BasicsAddonSignalBridge.suppliesIndicators(entity) : voice.indicatorEnabled;
+        IndicatorProfile indicatorProfile = voice == null && indicatorsAvailable
+                ? EngineProfileResolver.resolveIndicator(entity) : null;
         boolean observeSignals = voice == null
-                ? hornProfile != null || sirenProfile != null
-                : voice.hornEnabled || voice.sirenEnabled;
+                ? hornProfile != null || sirenProfile != null || indicatorProfile != null
+                : voice.hornEnabled || voice.sirenEnabled || voice.indicatorEnabled;
         BasicsAddonSignalBridge.SignalState signalState = observeSignals
                 ? BasicsAddonSignalBridge.read(entity)
                 : BasicsAddonSignalBridge.SignalState.INACTIVE;
@@ -162,7 +170,8 @@ public final class ProceduralAudioManager {
                         ? signalState.hornActive : nativeSignals.isHornActive();
                 boolean sirenActive = BasicsAddonSignalBridge.suppliesSiren(entity)
                         ? signalState.sirenActive : nativeSignals.isSirenActive();
-                signalState = new BasicsAddonSignalBridge.SignalState(hornActive, sirenActive);
+                signalState = new BasicsAddonSignalBridge.SignalState(hornActive, sirenActive,
+                        signalState.indicatorLeftActive, signalState.indicatorRightActive);
             } else {
                 boolean basicsHorn = BasicsAddonSignalBridge.suppliesHorn(entity);
                 boolean basicsSiren = BasicsAddonSignalBridge.suppliesSiren(entity);
@@ -175,7 +184,8 @@ public final class ProceduralAudioManager {
                                 && SignalKeyBindings.siren().isPressed());
                 signalState = new BasicsAddonSignalBridge.SignalState(
                         signalState.hornActive || localSignals.isHornActive(),
-                        signalState.sirenActive || localSignals.isSirenActive());
+                        signalState.sirenActive || localSignals.isSirenActive(),
+                        signalState.indicatorLeftActive, signalState.indicatorRightActive);
             }
         }
         float maxRpm = Math.max(500.0F, profile.resolveAcousticMaxRpm(engineMaxRpm));
@@ -184,22 +194,26 @@ public final class ProceduralAudioManager {
                 ? new TireSlipTracker() : voice.tireSlipTracker;
         float tireSlip = tireSquealGloballyEnabled
                 ? tireSlipTracker.update(readSkidInfos(entity)) : 0.0F;
+        OccupantAcoustics occupantAcoustics = occupantAcoustics(entity);
         if (voice == null) {
             EngineTelemetry initial = new EngineTelemetry(rpm, maxRpm, throttle,
                     estimateLoad(null, rpm, maxRpm, throttle, speed, gear, engineOn),
                     speed, gear, engineOn, engineOn && throttle > 0.5F && normalizedRpm >= 0.985F,
                     brakeApplied, tireSlip, signalState.hornActive, signalState.sirenActive,
-                    isInterior(entity), System.nanoTime());
+                    signalState.indicatorLeftActive, signalState.indicatorRightActive,
+                    occupantAcoustics.occupant, occupantAcoustics.seatGain,
+                    occupantAcoustics.interior, System.nanoTime());
             VehicleVoice created = new VehicleVoice(entity, engineName, profile, rotorProfile,
                     airBrakeProfile, reverseWarningProfile, brakeSquealProfile,
                     afterfireProfile, tireSquealProfile,
-                    hornProfile, sirenProfile, tireSlipTracker, localSignals, initial, clientTick);
+                    hornProfile, sirenProfile, indicatorProfile,
+                    tireSlipTracker, localSignals, initial, clientTick);
             VehicleVoice existing = voices.putIfAbsent(id, created);
             voice = existing == null ? created : existing;
             if (existing == null) {
                 int cylinders = profile.getFiringPattern() == null ? 0 : profile.getFiringPattern().getCylinderCount();
                 int banks = profile.getFiringPattern() == null ? 0 : profile.getFiringPattern().getBankCount();
-                LOGGER.debug("Observed DynamX engine {} on {}: profile={}, rotor={}, airBrake={}, reverseWarning={}, brakeSqueal={}, afterfire={}, tireSqueal={}, horn={}, siren={}, cylinders={}, banks={}, rpm={}/{}, engineOn={}",
+                LOGGER.debug("Observed DynamX engine {} on {}: profile={}, rotor={}, airBrake={}, reverseWarning={}, brakeSqueal={}, afterfire={}, tireSqueal={}, horn={}, siren={}, indicator={}, cylinders={}, banks={}, rpm={}/{}, engineOn={}",
                         engineName, vehicleName, profile.getPresetName(),
                         rotorProfile == null ? "none" : rotorProfile.getPresetName(),
                         airBrakeProfile == null ? "none" : airBrakeProfile.getPresetName(),
@@ -209,6 +223,7 @@ public final class ProceduralAudioManager {
                         tireSquealProfile == null ? "none" : tireSquealProfile.getPresetName(),
                         hornProfile == null ? "none" : hornProfile.getPresetName(),
                         sirenProfile == null ? "none" : sirenProfile.getPresetName(),
+                        indicatorProfile == null ? "none" : indicatorProfile.getPresetName(),
                         cylinders, banks,
                         Math.round(rpm), Math.round(maxRpm), engineOn);
             }
@@ -219,7 +234,9 @@ public final class ProceduralAudioManager {
         EngineTelemetry telemetry = new EngineTelemetry(rpm, maxRpm, throttle, load, speed, gear,
                 engineOn, engineOn && throttle > 0.5F && normalizedRpm >= 0.985F,
                 brakeApplied, tireSlip, signalState.hornActive, signalState.sirenActive,
-                isInterior(entity), System.nanoTime());
+                signalState.indicatorLeftActive, signalState.indicatorRightActive,
+                occupantAcoustics.occupant, occupantAcoustics.seatGain,
+                occupantAcoustics.interior, System.nanoTime());
         if (voice.lastEngineOn != engineOn) {
             LOGGER.debug("Engine transition source={} engine={} {} -> {}, rpm={}, throttle={}, load={}, gear={}, speed={}",
                     voice.sourceName, voice.engineName, voice.lastEngineOn, engineOn,
@@ -283,7 +300,10 @@ public final class ProceduralAudioManager {
             double maxDistanceSquared = voice.audibleDistance * voice.audibleDistance;
             boolean activeTireInput = voice.tireSquealEnabled && voice.telemetry.tireSlip > 0.60F;
             boolean activeSignalInput = (voice.hornEnabled && voice.telemetry.hornActive)
-                    || (voice.sirenEnabled && voice.telemetry.sirenActive);
+                    || (voice.sirenEnabled && voice.telemetry.sirenActive)
+                    || (voice.indicatorEnabled && voice.telemetry.vehicleOccupant
+                    && (voice.telemetry.indicatorLeftActive
+                    || voice.telemetry.indicatorRightActive));
             if (voice.distanceSquared <= maxDistanceSquared
                     && (voice.telemetry.engineOn || activeTireInput || activeSignalInput
                     || !voice.synthesizer.isSilent())) {
@@ -780,10 +800,39 @@ public final class ProceduralAudioManager {
         return (float) clamp(343.0 / (343.0 + radialMetersPerSecond), 0.82, 1.22);
     }
 
-    private static boolean isInterior(BaseVehicleEntity<?> entity) {
+    private static OccupantAcoustics occupantAcoustics(BaseVehicleEntity<?> entity) {
         EntityPlayer player = Minecraft.getMinecraft().player;
-        return player != null && Minecraft.getMinecraft().gameSettings.thirdPersonView == 0
-                && entity.isRidingOrBeingRiddenBy(player);
+        boolean occupant = player != null && entity.isRidingOrBeingRiddenBy(player);
+        if (!occupant) {
+            return OccupantAcoustics.OUTSIDE;
+        }
+
+        float seatGain = 1.0F;
+        SeatsModule seats = entity.getModuleByType(SeatsModule.class);
+        if (seats != null) {
+            BasePartSeat<?, ?> listenerSeat = seats.getRidingSeat(player);
+            BasePartSeat<?, ?> driverSeat = null;
+            for (PartEntitySeat seat : entity.getPackInfo().getPartsByType(PartEntitySeat.class)) {
+                if (seat.isDriver()) {
+                    driverSeat = seat;
+                    break;
+                }
+            }
+            if (listenerSeat != null && driverSeat != null
+                    && listenerSeat.getPosition() != null && driverSeat.getPosition() != null) {
+                float dx = listenerSeat.getPosition().x - driverSeat.getPosition().x;
+                float dy = listenerSeat.getPosition().y - driverSeat.getPosition().y;
+                float dz = listenerSeat.getPosition().z - driverSeat.getPosition().z;
+                double seatDistance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                double distanceBeyondFrontCabin = Math.max(0.0, seatDistance - 0.60);
+                seatGain = (float) Math.exp(-distanceBeyondFrontCabin * 1.15);
+                if (seatGain < 0.01F) {
+                    seatGain = 0.0F;
+                }
+            }
+        }
+        boolean interior = Minecraft.getMinecraft().gameSettings.thirdPersonView == 0;
+        return new OccupantAcoustics(true, interior, seatGain);
     }
 
     private static float finiteOr(float value, float fallback) {
@@ -798,6 +847,21 @@ public final class ProceduralAudioManager {
         return Math.max(min, Math.min(max, value));
     }
 
+    private static final class OccupantAcoustics {
+        private static final OccupantAcoustics OUTSIDE =
+                new OccupantAcoustics(false, false, 0.0F);
+
+        private final boolean occupant;
+        private final boolean interior;
+        private final float seatGain;
+
+        private OccupantAcoustics(boolean occupant, boolean interior, float seatGain) {
+            this.occupant = occupant;
+            this.interior = interior;
+            this.seatGain = seatGain;
+        }
+    }
+
     private static final class VehicleVoice {
         private final UUID id;
         private final String engineName;
@@ -806,6 +870,7 @@ public final class ProceduralAudioManager {
         private final boolean tireSquealEnabled;
         private final boolean hornEnabled;
         private final boolean sirenEnabled;
+        private final boolean indicatorEnabled;
         private final float hornDistance;
         private final float sirenDistance;
         private final TireSlipTracker tireSlipTracker;
@@ -833,6 +898,7 @@ public final class ProceduralAudioManager {
                              BrakeSquealProfile brakeSquealProfile, AfterfireProfile afterfireProfile,
                              TireSquealProfile tireSquealProfile,
                              HornProfile hornProfile, SirenProfile sirenProfile,
+                             IndicatorProfile indicatorProfile,
                              TireSlipTracker tireSlipTracker,
                              ClientLocalSignalState localSignals, EngineTelemetry telemetry, long tick) {
             this.id = entity.getUniqueID();
@@ -843,13 +909,14 @@ public final class ProceduralAudioManager {
             this.tireSquealEnabled = tireSquealProfile != null;
             this.hornEnabled = hornProfile != null;
             this.sirenEnabled = sirenProfile != null;
+            this.indicatorEnabled = indicatorProfile != null;
             this.hornDistance = hornProfile == null ? 0.0F : hornProfile.getAudibleDistance();
             this.sirenDistance = sirenProfile == null ? 0.0F : sirenProfile.getAudibleDistance();
             this.tireSlipTracker = tireSlipTracker;
             this.localSignals = localSignals;
             this.synthesizer = new EngineVoice(profile, rotorProfile, airBrakeProfile,
                     brakeSquealProfile, afterfireProfile, tireSquealProfile,
-                    hornProfile, sirenProfile, reverseWarningProfile,
+                    hornProfile, sirenProfile, reverseWarningProfile, indicatorProfile,
                     AdvancedSoundSettings.SAMPLE_RATE, telemetry);
             this.lastEngineOn = telemetry.engineOn;
             this.lastSeenTick = tick;

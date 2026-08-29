@@ -11,6 +11,7 @@ import de.jarexception.advancedsoundaddon.sound.ReverseWarningProfile;
 import de.jarexception.advancedsoundaddon.sound.RotorProfile;
 import de.jarexception.advancedsoundaddon.sound.TireSquealProfile;
 import de.jarexception.advancedsoundaddon.sound.HornProfile;
+import de.jarexception.advancedsoundaddon.sound.IndicatorProfile;
 import de.jarexception.advancedsoundaddon.sound.SirenProfile;
 import de.jarexception.advancedsoundaddon.signal.VehicleSignalModule;
 import fr.dynamx.api.contentpack.object.subinfo.ISubInfoType;
@@ -46,6 +47,9 @@ public class AdvancedSoundInfo implements ISubInfoType {
 
     @PackFileProperty(configNames = {"ReverseWarningPreset", "ReversingAlarmPreset", "BackupAlarmPreset"}, type = DefinitionType.DynamXDefinitionTypes.STRING, required = false)
     String reverseWarningPreset;
+
+    @PackFileProperty(configNames = {"IndicatorPreset", "TurnSignalPreset", "BlinkerPreset"}, type = DefinitionType.DynamXDefinitionTypes.STRING, required = false)
+    String indicatorPreset;
 
     @PackFileProperty(configNames = {"BrakeSquealPreset", "BrakeNoisePreset"}, type = DefinitionType.DynamXDefinitionTypes.STRING, required = false)
     String brakeSquealPreset;
@@ -261,6 +265,17 @@ public class AdvancedSoundInfo implements ISubInfoType {
         }
         String normalized = normalize(reverseWarningPreset);
         return ReverseWarningProfile.forPreset(normalized);
+    }
+
+    IndicatorProfile resolveIndicatorProfile() {
+        if (indicatorPreset == null || indicatorPreset.trim().isEmpty()) {
+            return IndicatorProfile.defaultProfile();
+        }
+        String normalized = normalize(indicatorPreset);
+        if ("OFF".equals(normalized) || "NONE".equals(normalized)) {
+            return null;
+        }
+        return IndicatorProfile.forPreset(normalized);
     }
 
     BrakeSquealProfile resolveBrakeSquealProfile() {

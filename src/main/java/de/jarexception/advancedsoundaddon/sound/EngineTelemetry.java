@@ -13,6 +13,10 @@ public final class EngineTelemetry {
     public final float tireSlip;
     public final boolean hornActive;
     public final boolean sirenActive;
+    public final boolean indicatorLeftActive;
+    public final boolean indicatorRightActive;
+    public final boolean vehicleOccupant;
+    public final float cabinSoundGain;
     public final boolean interior;
     public final long timestampNanos;
 
@@ -44,6 +48,19 @@ public final class EngineTelemetry {
                            boolean revLimiter, boolean brakeApplied, float tireSlip,
                            boolean hornActive, boolean sirenActive,
                            boolean interior, long timestampNanos) {
+        this(rpm, maxRpm, throttle, load, speedKmh, gear, engineOn, revLimiter,
+                brakeApplied, tireSlip, hornActive, sirenActive,
+                false, false, interior, interior ? 1.0F : 0.0F,
+                interior, timestampNanos);
+    }
+
+    public EngineTelemetry(float rpm, float maxRpm, float throttle, float load,
+                           float speedKmh, int gear, boolean engineOn,
+                           boolean revLimiter, boolean brakeApplied, float tireSlip,
+                           boolean hornActive, boolean sirenActive,
+                           boolean indicatorLeftActive, boolean indicatorRightActive,
+                           boolean vehicleOccupant, float cabinSoundGain,
+                           boolean interior, long timestampNanos) {
         this.rpm = clamp(rpm, 0.0F, Math.max(1.0F, maxRpm * 1.1F));
         this.maxRpm = Math.max(1.0F, maxRpm);
         this.throttle = clamp(throttle, 0.0F, 1.0F);
@@ -56,6 +73,10 @@ public final class EngineTelemetry {
         this.tireSlip = clamp(tireSlip, 0.0F, 1.0F);
         this.hornActive = hornActive;
         this.sirenActive = sirenActive;
+        this.indicatorLeftActive = indicatorLeftActive;
+        this.indicatorRightActive = indicatorRightActive;
+        this.vehicleOccupant = vehicleOccupant;
+        this.cabinSoundGain = clamp(cabinSoundGain, 0.0F, 1.0F);
         this.interior = interior;
         this.timestampNanos = timestampNanos;
     }

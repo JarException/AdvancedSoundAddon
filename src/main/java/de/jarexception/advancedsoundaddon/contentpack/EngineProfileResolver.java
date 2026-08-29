@@ -9,6 +9,7 @@ import de.jarexception.advancedsoundaddon.sound.ReverseWarningProfile;
 import de.jarexception.advancedsoundaddon.sound.RotorProfile;
 import de.jarexception.advancedsoundaddon.sound.TireSquealProfile;
 import de.jarexception.advancedsoundaddon.sound.HornProfile;
+import de.jarexception.advancedsoundaddon.sound.IndicatorProfile;
 import de.jarexception.advancedsoundaddon.sound.SirenProfile;
 import fr.dynamx.api.contentpack.object.subinfo.ISubInfoType;
 import fr.dynamx.api.contentpack.object.subinfo.ISubInfoTypeOwner;
@@ -78,6 +79,21 @@ public final class EngineProfileResolver {
             LOGGER.error("Invalid vehicle-level ReverseWarningPreset on {}: {}",
                     entity.getInfoName(), exception.getMessage());
             return null;
+        }
+    }
+
+    public static IndicatorProfile resolveIndicator(BaseVehicleEntity<?> entity) {
+        ModularVehicleInfo vehicleInfo = entity.getPackInfo();
+        AdvancedSoundInfo definition = vehicleInfo == null ? null : find(vehicleInfo);
+        if (definition == null) {
+            return IndicatorProfile.defaultProfile();
+        }
+        try {
+            return definition.resolveIndicatorProfile();
+        } catch (IllegalArgumentException exception) {
+            LOGGER.error("Invalid vehicle-level IndicatorPreset on {}: {}",
+                    entity.getInfoName(), exception.getMessage());
+            return IndicatorProfile.defaultProfile();
         }
     }
 

@@ -14,8 +14,12 @@ public final class BasicsAddonSignalBridge {
     private static final Method IS_SIREN_ON;
     private static final Method HAS_KLAXON;
     private static final Method HAS_SIREN;
+    private static final Method HAS_TURN_SIGNALS;
+    private static final Method IS_TURN_SIGNAL_LEFT_ON;
+    private static final Method IS_TURN_SIGNAL_RIGHT_ON;
     private static final Method GET_INFOS;
     private static final Field KLAXON_SOUND;
+    private static final Field INDICATORS_SOUND;
 
     static {
         Class<?> moduleClass = null;
@@ -23,8 +27,12 @@ public final class BasicsAddonSignalBridge {
         Method isSirenOn = null;
         Method hasKlaxon = null;
         Method hasSiren = null;
+        Method hasTurnSignals = null;
+        Method isTurnSignalLeftOn = null;
+        Method isTurnSignalRightOn = null;
         Method getInfos = null;
         Field klaxonSound = null;
+        Field indicatorsSound = null;
         try {
             moduleClass = Class.forName(MODULE_CLASS_NAME, false,
                     BasicsAddonSignalBridge.class.getClassLoader());
@@ -41,11 +49,33 @@ public final class BasicsAddonSignalBridge {
         }
         if (moduleClass != null) {
             try {
+                hasTurnSignals = moduleClass.getMethod("hasTurnSignals");
+                isTurnSignalLeftOn = moduleClass.getMethod("isTurnSignalLeftOn");
+                isTurnSignalRightOn = moduleClass.getMethod("isTurnSignalRightOn");
+            } catch (ReflectiveOperationException | LinkageError | RuntimeException ignored) {
+                hasTurnSignals = null;
+                isTurnSignalLeftOn = null;
+                isTurnSignalRightOn = null;
+            }
+            try {
                 getInfos = moduleClass.getMethod("getInfos");
-                klaxonSound = getInfos.getReturnType().getField("klaxonSound");
             } catch (ReflectiveOperationException | LinkageError | RuntimeException ignored) {
                 getInfos = null;
+            }
+            if (getInfos != null) {
+                try {
+                    klaxonSound = getInfos.getReturnType().getField("klaxonSound");
+                } catch (ReflectiveOperationException | LinkageError | RuntimeException ignored) {
+                    klaxonSound = null;
+                }
+                try {
+                    indicatorsSound = getInfos.getReturnType().getField("indicatorsSound");
+                } catch (ReflectiveOperationException | LinkageError | RuntimeException ignored) {
+                    indicatorsSound = null;
+                }
+            } else {
                 klaxonSound = null;
+                indicatorsSound = null;
             }
         }
         MODULE_CLASS = moduleClass;
@@ -53,8 +83,12 @@ public final class BasicsAddonSignalBridge {
         IS_SIREN_ON = isSirenOn;
         HAS_KLAXON = hasKlaxon;
         HAS_SIREN = hasSiren;
+        HAS_TURN_SIGNALS = hasTurnSignals;
+        IS_TURN_SIGNAL_LEFT_ON = isTurnSignalLeftOn;
+        IS_TURN_SIGNAL_RIGHT_ON = isTurnSignalRightOn;
         GET_INFOS = getInfos;
         KLAXON_SOUND = klaxonSound;
+        INDICATORS_SOUND = indicatorsSound;
     }
 
     private BasicsAddonSignalBridge() {
@@ -67,7 +101,9 @@ public final class BasicsAddonSignalBridge {
             Object module = module(entity);
             if (module == null) return SignalState.INACTIVE;
             return new SignalState((Boolean) PLAY_KLAXON.invoke(module),
-                    (Boolean) IS_SIREN_ON.invoke(module));
+                    (Boolean) IS_SIREN_ON.invoke(module),
+                    invokeBoolean(module, IS_TURN_SIGNAL_LEFT_ON),
+                    invokeBoolean(module, IS_TURN_SIGNAL_RIGHT_ON));
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             return SignalState.INACTIVE;
         }
@@ -81,6 +117,10 @@ public final class BasicsAddonSignalBridge {
         return capability(entity, HAS_SIREN);
     }
 
+    public static boolean suppliesIndicators(BaseVehicleEntity<?> entity) {
+        return capability(entity, HAS_TURN_SIGNALS);
+    }
+
     static boolean matchesLegacyHornSound(BaseVehicleEntity<?> entity, String soundName) {
         if (MODULE_CLASS == null || GET_INFOS == null || KLAXON_SOUND == null
                 || entity == null || soundName == null) return false;
@@ -92,6 +132,10 @@ public final class BasicsAddonSignalBridge {
         } catch (ReflectiveOperationException | RuntimeException ignored) {
             return false;
         }
+    }
+
+    static boolean matchesLegacyIndicatorSound(BaseVehicleEntity<?> entity, String soundName) {
+        return matchesInfoSound(entity, soundName, INDICATORS_SOUND);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
@@ -109,15 +153,43 @@ public final class BasicsAddonSignalBridge {
         }
     }
 
+    private static boolean invokeBoolean(Object target, Method method) {
+        if (target == null || method == null) return false;
+        try {
+            return Boolean.TRUE.equals(method.invoke(target));
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return false;
+        }
+    }
+
+    private static boolean matchesInfoSound(BaseVehicleEntity<?> entity, String soundName,
+                                            Field soundField) {
+        if (MODULE_CLASS == null || GET_INFOS == null || soundField == null
+                || entity == null || soundName == null) return false;
+        try {
+            Object module = module(entity);
+            if (module == null) return false;
+            Object infos = GET_INFOS.invoke(module);
+            return infos != null && soundName.equals(soundField.get(infos));
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return false;
+        }
+    }
+
     static final class SignalState {
-        static final SignalState INACTIVE = new SignalState(false, false);
+        static final SignalState INACTIVE = new SignalState(false, false, false, false);
 
         final boolean hornActive;
         final boolean sirenActive;
+        final boolean indicatorLeftActive;
+        final boolean indicatorRightActive;
 
-        SignalState(boolean hornActive, boolean sirenActive) {
+        SignalState(boolean hornActive, boolean sirenActive,
+                    boolean indicatorLeftActive, boolean indicatorRightActive) {
             this.hornActive = hornActive;
             this.sirenActive = sirenActive;
+            this.indicatorLeftActive = indicatorLeftActive;
+            this.indicatorRightActive = indicatorRightActive;
         }
     }
 }

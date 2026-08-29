@@ -3,6 +3,7 @@ package de.jarexception.advancedsoundaddon.client;
 import com.jme3.math.Vector3f;
 import de.jarexception.advancedsoundaddon.contentpack.EngineProfileResolver;
 import fr.dynamx.api.audio.IDynamXSound;
+import fr.dynamx.client.sound.VehicleSound;
 import fr.dynamx.common.entities.BaseVehicleEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.entity.Entity;
@@ -63,5 +64,32 @@ public final class AdvancedSoundRuntime {
         } catch (RuntimeException | LinkageError ignored) {
             return false;
         }
+    }
+
+    public static boolean shouldSuppressLegacyIndicator(IDynamXSound sound) {
+        if (!replacementAvailable || !(sound instanceof VehicleSound)) {
+            return false;
+        }
+        try {
+            BaseVehicleEntity<?> vehicle = vehicleForSound(sound);
+            return vehicle != null
+                    && BasicsAddonSignalBridge.suppliesIndicators(vehicle)
+                    && EngineProfileResolver.resolveIndicator(vehicle) != null
+                    && BasicsAddonSignalBridge.matchesLegacyIndicatorSound(
+                    vehicle, ((VehicleSound) sound).getSoundName());
+        } catch (RuntimeException | LinkageError ignored) {
+            return false;
+        }
+    }
+
+    private static BaseVehicleEntity<?> vehicleForSound(IDynamXSound sound) {
+        String uniqueName = sound.getSoundUniqueName();
+        int separator = uniqueName == null ? -1 : uniqueName.indexOf('_');
+        if (separator <= 0) return null;
+        int entityId = Integer.parseInt(uniqueName.substring(0, separator));
+        Minecraft minecraft = Minecraft.getMinecraft();
+        if (minecraft.world == null) return null;
+        Entity entity = minecraft.world.getEntityByID(entityId);
+        return entity instanceof BaseVehicleEntity ? (BaseVehicleEntity<?>) entity : null;
     }
 }

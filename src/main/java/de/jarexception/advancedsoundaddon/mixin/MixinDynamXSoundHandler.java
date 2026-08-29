@@ -32,6 +32,23 @@ public abstract class MixinDynamXSoundHandler {
     private void advancedsoundaddon$muteConfiguredSiren(
             DynamXSoundHandler handler, IDynamXSound sound, float volume) {
         handler.setSoundVolume(sound,
-                AdvancedSoundRuntime.shouldSuppressLegacySiren(sound) ? 0.0F : volume);
+                shouldMuteLegacyStream(sound) ? 0.0F : volume);
+    }
+
+    @Inject(method = "setSoundVolume(Lfr/dynamx/api/audio/IDynamXSound;F)V",
+            at = @At("HEAD"), cancellable = true, require = 0, remap = false)
+    private void advancedsoundaddon$keepReplacedStreamMuted(
+            IDynamXSound sound, float volume, CallbackInfo callback) {
+        if (!shouldMuteLegacyStream(sound)) return;
+        DynamXSoundHandler handler = (DynamXSoundHandler) (Object) this;
+        if (handler.getMcSoundSystem() != null) {
+            handler.getMcSoundSystem().setVolume(sound.getSoundUniqueName(), 0.0F);
+        }
+        callback.cancel();
+    }
+
+    private static boolean shouldMuteLegacyStream(IDynamXSound sound) {
+        return AdvancedSoundRuntime.shouldSuppressLegacySiren(sound)
+                || AdvancedSoundRuntime.shouldSuppressLegacyIndicator(sound);
     }
 }
